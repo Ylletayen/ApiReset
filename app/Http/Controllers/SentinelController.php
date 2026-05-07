@@ -48,7 +48,7 @@ class SentinelController extends Controller {
             'avg_latency' => round($avgLatency) . ' ms'
         ];
 
-        return view('sentinel.dashboard', compact('samples', 'stats'));
+        return view('welcome', compact('samples', 'stats'));
     }
 
     public function store(Request $request) {

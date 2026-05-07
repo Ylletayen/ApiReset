@@ -3,9 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SentinelController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Ahora la raíz carga directamente la lógica de Sentinel
+Route::get('/', [SentinelController::class, 'index'])->name('home');
 
 Route::prefix('sentinel')->group(function () {
     Route::get('/', [SentinelController::class, 'index'])->name('sentinel.index');
