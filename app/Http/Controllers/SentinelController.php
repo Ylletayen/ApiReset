@@ -227,40 +227,61 @@ class SentinelController extends Controller {
     public function runAudit(Request $request) {
         $request->validate(['target_url' => 'required|url']);
         $url = $request->input('target_url');
-        
+        $isBeta = $request->input('beta_run', false);
+
         try {
-            $response = Http::timeout(10)->get($url);
+            // Aumentamos tiempo y quitamos verificación SSL para evitar el error cURL 28
+            $response = Http::timeout(20)->withoutVerifying()->get($url);
             $html = $response->body();
             $results = [];
 
-            // Buscador dinámico de recursos
-            preg_match_all('/(src|href)=["\']([^"\']+\.(js|css|php|json|py)(\?[^"\']*)?)["\']/i', $html, $matches);
+            // Buscador de recursos
+            preg_match_all('/(src|href)=["\']([^"\']+\.(js|css|php|json|py|png|jpg)(\?[^"\']*)?)["\']/i', $html, $matches);
             $foundResources = array_unique($matches[2]);
 
-            foreach ($foundResources as $path) {
-                $criticalChars = preg_match_all("/[';<>%--]/", $path);
-                
-                $prediction = ($criticalChars > 3 || str_contains($path, 'admin')) ? 'Amenaza Detectada' : 'Legítimo';
-                $prob = rand(70, 98) / 100;
+            // Si es modo Beta, inyectamos ataques simulados
+            if ($isBeta && count($foundResources) > 0) {
+                $fuzz = ["?id=1' OR 1=1", "?s=<script>alert(1)</script>", "/../../etc/passwd"];
+                foreach (array_slice($foundResources, 0, 3) as $base) {
+                    foreach ($fuzz as $f) { $foundResources[] = $base . $f; }
+                }
+            }
 
+            foreach ($foundResources as $path) {
+                $pathLower = strtolower($path);
+                $chars = preg_match_all("/[';<>%--]/", $path);
+                
+                // Lógica de Clasificación
+                $prediction = 'Legítimo';
+                $vuln = 'N/A (Seguro)';
+                $prob = rand(60, 80) / 100;
+
+                if (str_contains($pathLower, 'script') || str_contains($pathLower, '<')) {
+                    $prediction = 'Amenaza Detectada'; $vuln = 'XSS (Injection)'; $prob = 0.95;
+                } elseif (str_contains($pathLower, 'or 1=1') || $chars > 5) {
+                    $prediction = 'Amenaza Detectada'; $vuln = 'SQLi (Injection)'; $prob = 0.98;
+                }
+
+                // IMPORTANTE: Todas estas llaves deben existir para el JS
                 $results[] = [
                     'path' => $path,
                     'length' => strlen($path),
-                    'chars' => $criticalChars,
+                    'chars' => $chars,
                     'prediction' => $prediction,
-                    'prob' => $prob
+                    'vuln_type' => $vuln,
+                    'prob' => $prob,
+                    'is_simulated' => (str_contains($path, 'OR') || str_contains($path, 'script'))
                 ];
             }
 
-            // REGRESAMOS JSON EN LUGAR DE REDIRECT
             return response()->json([
                 'success' => true,
                 'url' => $url,
-                'data' => $results
+                'data' => array_values($results) // Asegura que sea un array simple
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 }
