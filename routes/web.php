@@ -14,4 +14,5 @@ Route::prefix('sentinel')->group(function () {
     Route::post('/train', [SentinelController::class, 'trainModel'])->name('sentinel.train');
     Route::post('/model/upload', [SentinelController::class, 'uploadModel'])->name('sentinel.model.upload');
     Route::get('/model/export', [SentinelController::class, 'exportModel'])->name('sentinel.model.export');
+    Route::post('/audit', [SentinelController::class, 'runAudit'])->name('sentinel.audit');
 });

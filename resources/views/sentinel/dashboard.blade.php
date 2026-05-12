@@ -47,6 +47,9 @@
             <button onclick="switchTab('entrenamiento')" id="btn-entrenamiento" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700 flex items-center gap-2">
                 <i data-lucide="brain-circuit" class="w-4 h-4"></i> Entrenamiento
             </button>
+            <button onclick="switchTab('auditoria')" id="btn-auditoria" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700 flex items-center gap-2">
+                <i data-lucide="search" class="w-4 h-4"></i> Auditoría
+            </button>
         </div>
     </header>
 
@@ -139,5 +142,6 @@
     @include('sentinel.partials.ficha')
     @include('sentinel.partials.produccion')
     @include('sentinel.partials.entrenamiento')
+    @include('sentinel.partials.auditoria')
 
 @endsection
